@@ -1,0 +1,65 @@
+@startuml arquitectura-pa2
+!pragma layout smetana
+skinparam defaultFontName Calibri
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam roundCorner 8
+skinparam componentStyle rectangle
+skinparam ArrowColor #444444
+skinparam ArrowFontSize 11
+skinparam rectangle {
+  BorderColor #555555
+}
+skinparam database {
+  BackgroundColor #FFF4D6
+  BorderColor #A07800
+}
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #555555
+}
+
+title PA2 - Anulación de pedidos con devolución de stock
+
+actor "Cliente HTTP\n(Postman / navegador)" as cli
+
+rectangle "sistema-pedidos-springboot  ·  Spring Boot 4.1  ·  puerto 8081" as spring #EAF2FB {
+  component "AnulacionPedidoController\n@RestController\n/api/v1/anulaciones" as ctrl
+  component "AnulacionPedidoService\n(AnulacionPedidoServiceImpl)\n@Transactional (solo H2)" as srv
+  component "DevolucionStockClient\n(DevolucionStockRestClient\n+ RestClient)" as dcli
+  component "AnulacionPedidoRepository" as arepo
+  component "PedidoRepository" as prepo
+  component "PedidoServiceImpl\n(reto: compensación)" as psrv
+  component "IncidenteConciliacionService\nREQUIRES_NEW" as inc
+  database "H2 (memoria)\npedido · anulacion_pedido\nincidente_conciliacion" as h2
+}
+
+rectangle "inventario-service  ·  Jakarta EE 11 / WildFly  ·  puerto 8082" as wf #EEF7EA {
+  component "ProductoResource\nJAX-RS\nPOST /productos/codigo/{codigo}/devoluciones" as res
+  component "InventarioService\n@Stateless · JTA REQUIRED" as isrv
+  component "ProductoInventario\n@Entity · @Version" as ent
+}
+
+database "SQL Server\nInventarioDB\nproducto_inventario" as sql
+
+cli --> ctrl : POST / GET JSON
+ctrl --> srv : Constructor Injection
+srv --> dcli : 1) devolverStock(codigo, cantidad)
+dcli --> res : HTTP/JSON\n{"cantidad": 2}
+res --> isrv : @EJB
+isrv --> ent : devolverStock()
+ent --> sql : JPA (JTA)
+srv --> prepo : 2) estado = ANULADO
+srv --> arepo : 3) guarda anulación
+prepo --> h2
+arepo --> h2
+psrv ..> dcli : compensación\nsi falla lo local
+psrv ..> inc : si la compensación falla
+inc ..> h2
+
+note bottom of srv
+  No hay transacción distribuida:
+  @Transactional revierte H2,
+  pero NO la devolución remota.
+end note
+@enduml
