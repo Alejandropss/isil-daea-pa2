@@ -38,3 +38,30 @@ Accept: application/json
 {
   "cantidad": 9999
 }
+
+### PA2 - Devolver stock por código (200: codigo, cantidadDevuelta, stockRestante)
+POST {{baseUrl}}/inventario/productos/codigo/LAP-001/devoluciones
+Content-Type: application/json
+Accept: application/json
+
+{
+  "cantidad": 2
+}
+
+### PA2 - Devolución con cantidad inválida (400, el stock no cambia)
+POST {{baseUrl}}/inventario/productos/codigo/LAP-001/devoluciones
+Content-Type: application/json
+Accept: application/json
+
+{
+  "cantidad": 0
+}
+
+### PA2 - Devolución de un código inexistente (404, el stock no cambia)
+POST {{baseUrl}}/inventario/productos/codigo/NO-EXISTE/devoluciones
+Content-Type: application/json
+Accept: application/json
+
+{
+  "cantidad": 2
+}

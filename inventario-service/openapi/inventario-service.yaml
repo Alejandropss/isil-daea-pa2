@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Inventario Service
-  version: 1.3.0
+  version: 1.4.0
   description: API académica responsable del catálogo de productos, precios y stock.
 servers:
   - url: http://localhost:8082/inventario-service/api
@@ -58,6 +58,38 @@ paths:
         '400': { description: Datos inválidos }
         '404': { description: Producto no encontrado }
         '409': { description: Stock insuficiente o conflicto de concurrencia }
+  /inventario/productos/codigo/{codigo}/devoluciones:
+    post:
+      summary: Devuelve stock (PA2) - usado al anular un pedido o como compensación
+      parameters:
+        - in: path
+          name: codigo
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DevolucionStockRequest'
+            example: { cantidad: 2 }
+      responses:
+        '200':
+          description: Stock devuelto correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DevolucionStockResponse'
+              example:
+                productoId: 1
+                codigo: LAP-001
+                nombre: Laptop
+                cantidadDevuelta: 2
+                stockRestante: 10
+                version: 2
+        '400': { description: Cantidad nula, cero o negativa }
+        '404': { description: Código de producto inexistente }
+        '409': { description: Conflicto de concurrencia (@Version) }
 components:
   schemas:
     ProductoResponse:
@@ -84,5 +116,21 @@ components:
         nombre: { type: string }
         precio: { type: number, format: double }
         cantidadReservada: { type: integer }
+        stockRestante: { type: integer }
+        version: { type: integer, format: int64 }
+    DevolucionStockRequest:
+      type: object
+      required: [cantidad]
+      properties:
+        cantidad:
+          type: integer
+          minimum: 1
+    DevolucionStockResponse:
+      type: object
+      properties:
+        productoId: { type: integer, format: int64 }
+        codigo: { type: string }
+        nombre: { type: string }
+        cantidadDevuelta: { type: integer }
         stockRestante: { type: integer }
         version: { type: integer, format: int64 }

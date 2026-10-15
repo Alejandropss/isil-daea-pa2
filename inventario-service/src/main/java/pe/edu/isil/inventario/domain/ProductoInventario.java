@@ -75,6 +75,17 @@ public class ProductoInventario {
     stock -= cantidad;
   }
 
+  /**
+   * Operación inversa a {@link #reservarStock(int)}: devuelve unidades al stock,
+   * por ejemplo cuando el Sistema de Pedidos anula un pedido.
+   */
+  public void devolverStock(int cantidad) {
+    if (cantidad <= 0) {
+      throw new IllegalArgumentException("La cantidad a devolver debe ser mayor que cero.");
+    }
+    stock += cantidad;
+  }
+
   public Long getId() {
     return id;
   }
