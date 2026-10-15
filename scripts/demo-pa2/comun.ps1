@@ -8,9 +8,13 @@ $ErrorActionPreference = 'Continue'
 $Pedidos = 'http://localhost:8081/sistema-pedidos'
 $Inventario = 'http://localhost:8082/inventario-service/api/inventario'
 
+# Ventana lo más alta posible y sin barra horizontal (las líneas largas se ajustan).
 try {
-  $Host.UI.RawUI.BufferSize = New-Object Management.Automation.Host.Size(130, 3000)
-  $Host.UI.RawUI.WindowSize = New-Object Management.Automation.Host.Size(130, 52)
+  $maximo = $Host.UI.RawUI.MaxPhysicalWindowSize
+  $ancho = [Math]::Min(125, $maximo.Width)
+  $alto = [Math]::Min(58, $maximo.Height - 1)
+  $Host.UI.RawUI.BufferSize = New-Object Management.Automation.Host.Size($ancho, 3000)
+  $Host.UI.RawUI.WindowSize = New-Object Management.Automation.Host.Size($ancho, $alto)
 } catch { }
 
 function Titulo([string]$texto) {

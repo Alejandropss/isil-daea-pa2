@@ -16,7 +16,7 @@ RegistrarPedido 'Ana Torres' 'LAP-001' 2
 if ($LogSpring -and (Test-Path $LogSpring)) {
   Paso 'Log de Spring Boot: reserva, fallo local y compensación'
   Get-Content $LogSpring -Encoding UTF8 |
-    Select-String -Pattern 'Reserva confirmada|Fallo local tras reservar|Compensación aplicada|compensación de|incidente' |
+    Select-String -Pattern 'Reserva confirmada|Fallo local tras reservar|Compensación aplicada|compensación de|registrar el incidente' |
     ForEach-Object { Write-Host ('   ' + ($_.Line -replace '^.*?\s:\s', '')) -ForegroundColor Gray }
 }
 
