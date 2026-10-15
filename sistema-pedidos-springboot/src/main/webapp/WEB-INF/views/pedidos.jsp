@@ -110,6 +110,7 @@
                     <th>Cantidad</th>
                     <th>Total</th>
                     <th>Fecha</th>
+                    <th>Estado</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -135,12 +136,13 @@
                                     maxFractionDigits="2"/>
                         </td>
                         <td><c:out value="${pedido.fecha}"/></td>
+                        <td><c:out value="${pedido.estado}"/></td>
                     </tr>
                 </c:forEach>
 
                 <c:if test="${empty pedidos}">
                     <tr>
-                        <td colspan="8" class="sin-datos">Aún no hay pedidos.</td>
+                        <td colspan="9" class="sin-datos">Aún no hay pedidos.</td>
                     </tr>
                 </c:if>
                 </tbody>

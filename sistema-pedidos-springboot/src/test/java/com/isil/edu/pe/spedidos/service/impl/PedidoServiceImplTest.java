@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.isil.edu.pe.spedidos.client.DevolucionStockClient;
 import com.isil.edu.pe.spedidos.client.InventarioClient;
 import com.isil.edu.pe.spedidos.client.InventarioClientException;
 import com.isil.edu.pe.spedidos.client.InventarioNoDisponibleException;
@@ -16,6 +17,7 @@ import com.isil.edu.pe.spedidos.client.dto.ReservaStockResponse;
 import com.isil.edu.pe.spedidos.entity.Pedido;
 import com.isil.edu.pe.spedidos.exception.PedidoException;
 import com.isil.edu.pe.spedidos.repository.PedidoRepository;
+import com.isil.edu.pe.spedidos.service.IncidenteConciliacionService;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,9 +50,13 @@ class PedidoServiceImplTest {
     pedidoRepository = mock(PedidoRepository.class);
     inventarioClient = mock(InventarioClient.class);
 
+    // PA2: el constructor ahora también recibe lo necesario para la compensación (reto).
     pedidoService = new PedidoServiceImpl(
         pedidoRepository,
-        inventarioClient
+        inventarioClient,
+        mock(DevolucionStockClient.class),
+        mock(IncidenteConciliacionService.class),
+        false
     );
   }
 

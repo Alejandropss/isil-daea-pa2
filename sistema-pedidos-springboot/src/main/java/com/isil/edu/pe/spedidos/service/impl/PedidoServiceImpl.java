@@ -1,16 +1,22 @@
 package com.isil.edu.pe.spedidos.service.impl;
 
+import com.isil.edu.pe.spedidos.client.DevolucionStockClient;
 import com.isil.edu.pe.spedidos.client.InventarioClient;
 import com.isil.edu.pe.spedidos.client.InventarioClientException;
 import com.isil.edu.pe.spedidos.client.InventarioNoDisponibleException;
+import com.isil.edu.pe.spedidos.client.dto.DevolucionStockResponse;
 import com.isil.edu.pe.spedidos.client.dto.ProductoInventarioResponse;
 import com.isil.edu.pe.spedidos.client.dto.ReservaStockResponse;
 import com.isil.edu.pe.spedidos.entity.Pedido;
 import com.isil.edu.pe.spedidos.exception.PedidoException;
 import com.isil.edu.pe.spedidos.repository.PedidoRepository;
+import com.isil.edu.pe.spedidos.service.IncidenteConciliacionService;
 import com.isil.edu.pe.spedidos.service.PedidoService;
 import java.math.BigDecimal;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,8 +66,14 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PedidoServiceImpl implements PedidoService {
 
+  private static final Logger log = LoggerFactory.getLogger(PedidoServiceImpl.class);
+
   private final PedidoRepository pedidoRepository;
   private final InventarioClient inventarioClient;
+  // PA2 (reto): dependencias para compensar una reserva cuando falla la parte local.
+  private final DevolucionStockClient devolucionStockClient;
+  private final IncidenteConciliacionService incidenteConciliacionService;
+  private final boolean simularFalloLocalTrasReserva;
 
   /**
    * Construye el servicio utilizando las dependencias proporcionadas
@@ -83,10 +95,19 @@ public class PedidoServiceImpl implements PedidoService {
    *                         y consultar pedidos
    * @param inventarioClient cliente utilizado para comunicarse
    *                         con el servicio de Inventario
+   * @param devolucionStockClient cliente usado para compensar la reserva (PA2)
+   * @param incidenteConciliacionService registra compensaciones fallidas (PA2)
+   * @param simularFalloLocalTrasReserva solo para la demostración del reto;
+   *                                     desactivado por defecto en application.properties
    */
-  public PedidoServiceImpl(PedidoRepository pedidoRepository, InventarioClient inventarioClient) {
+  public PedidoServiceImpl(PedidoRepository pedidoRepository, InventarioClient inventarioClient,
+      DevolucionStockClient devolucionStockClient, IncidenteConciliacionService incidenteConciliacionService,
+      @Value("${pedidos.simulacion.fallo-local-tras-reserva:false}") boolean simularFalloLocalTrasReserva) {
     this.pedidoRepository = pedidoRepository;
     this.inventarioClient = inventarioClient;
+    this.devolucionStockClient = devolucionStockClient;
+    this.incidenteConciliacionService = incidenteConciliacionService;
+    this.simularFalloLocalTrasReserva = simularFalloLocalTrasReserva;
   }
 
   /**
@@ -149,14 +170,66 @@ public class PedidoServiceImpl implements PedidoService {
       throw new PedidoException(e.getMessage(), e);
     }
 
-    validarReserva(reserva);
+    /*
+     * PA2 (reto): desde aquí el stock YA está descontado en SQL Server.
+     * Si la parte local falla, el rollback de H2 no lo devuelve: hay que compensar.
+     */
+    try {
+      validarReserva(reserva);
 
-    BigDecimal total = reserva.getPrecio().multiply(BigDecimal.valueOf(cantidad));
+      BigDecimal total = reserva.getPrecio().multiply(BigDecimal.valueOf(cantidad));
 
-    Pedido pedido = new Pedido(cliente.trim(), reserva.getCodigo(), reserva.getNombre(),
-            reserva.getPrecio(), cantidad, total);
+      Pedido pedido = new Pedido(cliente.trim(), reserva.getCodigo(), reserva.getNombre(),
+              reserva.getPrecio(), cantidad, total);
 
-    return pedidoRepository.save(pedido);
+      Pedido guardado = pedidoRepository.save(pedido);
+      simularFalloLocalSiEstaActivado();
+      return guardado;
+    } catch (RuntimeException falloLocal) {
+      String mensaje = compensarReserva(productoCodigo.trim(), cantidad, falloLocal);
+      // Al relanzar, @Transactional hace rollback de H2: el pedido no queda guardado.
+      throw new PedidoException(mensaje, falloLocal);
+    }
+  }
+
+  /** Solo se activa con pedidos.simulacion.fallo-local-tras-reserva=true (por defecto false). */
+  private void simularFalloLocalSiEstaActivado() {
+    if (simularFalloLocalTrasReserva) {
+      throw new IllegalStateException("Fallo local simulado después de la reserva y antes del commit de H2.");
+    }
+  }
+
+  /**
+   * Compensación: operación de negocio inversa a la reserva (devolver el stock).
+   * Se intenta una sola vez; si falla, se registra un incidente para conciliación manual.
+   */
+  private String compensarReserva(String productoCodigo, int cantidad, RuntimeException falloLocal) {
+    log.warn("Fallo local tras reservar {} unidad(es) de {}: {}. Se aplica compensación.",
+        cantidad, productoCodigo, falloLocal.getMessage());
+    try {
+      DevolucionStockResponse devolucion = devolucionStockClient.devolverStock(productoCodigo, cantidad);
+      log.info("Compensación aplicada: stock de {} restaurado a {}.", productoCodigo,
+          devolucion == null ? "?" : devolucion.getStockRestante());
+      return "No se pudo registrar el pedido por un fallo local. "
+          + "La reserva de stock fue revertida mediante compensación.";
+    } catch (RuntimeException falloCompensacion) {
+      log.error("La compensación de {} unidad(es) de {} falló: {}", cantidad, productoCodigo,
+          falloCompensacion.getMessage());
+      registrarIncidente(productoCodigo, cantidad, falloLocal, falloCompensacion);
+      return "No se pudo registrar el pedido y la compensación de stock falló. "
+          + "Se registró un incidente pendiente de conciliación.";
+    }
+  }
+
+  private void registrarIncidente(String productoCodigo, int cantidad, RuntimeException falloLocal,
+      RuntimeException falloCompensacion) {
+    try {
+      incidenteConciliacionService.registrarCompensacionPendiente(productoCodigo, cantidad,
+          "Fallo local: " + falloLocal.getMessage() + " | Fallo compensación: " + falloCompensacion.getMessage());
+    } catch (RuntimeException e) {
+      // Último recurso: si tampoco se puede guardar, queda al menos en el log.
+      log.error("No se pudo registrar el incidente de conciliación para {} x{}.", productoCodigo, cantidad, e);
+    }
   }
 
   /**

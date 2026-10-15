@@ -1,0 +1,43 @@
+### PA2 - API de anulaciones (sistema-pedidos-springboot)
+### Requisito: SQL Server -> WildFly (inventario-service :8082) -> Spring Boot (:8081)
+
+@base = http://localhost:8081/sistema-pedidos
+
+### 0) Registrar un pedido de 2 unidades (formulario JSP)
+POST {{base}}/pedidos
+Content-Type: application/x-www-form-urlencoded
+
+cliente=Ana Torres&productoCodigo=LAP-001&cantidad=2
+
+### 1) Anulación correcta -> 201 Created, devuelve 2 unidades a Inventario
+POST {{base}}/api/v1/anulaciones
+Content-Type: application/json
+
+{
+  "pedidoId": 1,
+  "motivo": "Solicitud del cliente"
+}
+
+### 2) Anulación duplicada -> 409 Conflict (no se devuelve stock otra vez)
+POST {{base}}/api/v1/anulaciones
+Content-Type: application/json
+
+{
+  "pedidoId": 1,
+  "motivo": "Solicitud del cliente"
+}
+
+### 3) Pedido inexistente -> 404 Not Found (Inventario no cambia)
+POST {{base}}/api/v1/anulaciones
+Content-Type: application/json
+
+{
+  "pedidoId": 999,
+  "motivo": "Prueba"
+}
+
+### Listar anulaciones registradas
+GET {{base}}/api/v1/anulaciones
+
+### Listar pedidos (incluye el campo estado: REGISTRADO / ANULADO)
+GET {{base}}/api/v1/orders

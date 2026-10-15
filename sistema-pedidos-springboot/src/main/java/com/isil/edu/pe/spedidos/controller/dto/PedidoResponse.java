@@ -1,6 +1,7 @@
 package com.isil.edu.pe.spedidos.controller.dto;
 
 import com.isil.edu.pe.spedidos.entity.Pedido;
+import com.isil.edu.pe.spedidos.entity.PedidoEstado;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -18,7 +19,8 @@ public record PedidoResponse(
     BigDecimal precioUnitario,
     int cantidad,
     BigDecimal total,
-    LocalDateTime fecha
+    LocalDateTime fecha,
+    PedidoEstado estado
 ) {
 
   /**
@@ -37,7 +39,8 @@ public record PedidoResponse(
         pedido.getPrecioUnitario(),
         pedido.getCantidad(),
         pedido.getTotal(),
-        pedido.getFecha()
+        pedido.getFecha(),
+        pedido.getEstado()
     );
   }
 }
