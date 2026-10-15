@@ -176,6 +176,8 @@ public class PedidoServiceImpl implements PedidoService {
      */
     try {
       validarReserva(reserva);
+      log.info("Reserva confirmada en Inventario: {} x{} (stock restante: {}).",
+          reserva.getCodigo(), cantidad, reserva.getStockRestante());
 
       BigDecimal total = reserva.getPrecio().multiply(BigDecimal.valueOf(cantidad));
 
@@ -204,7 +206,7 @@ public class PedidoServiceImpl implements PedidoService {
    * Se intenta una sola vez; si falla, se registra un incidente para conciliación manual.
    */
   private String compensarReserva(String productoCodigo, int cantidad, RuntimeException falloLocal) {
-    log.warn("Fallo local tras reservar {} unidad(es) de {}: {}. Se aplica compensación.",
+    log.warn("Fallo local tras reservar {} unidad(es) de {} -> se aplica compensación. Causa: {}",
         cantidad, productoCodigo, falloLocal.getMessage());
     try {
       DevolucionStockResponse devolucion = devolucionStockClient.devolverStock(productoCodigo, cantidad);

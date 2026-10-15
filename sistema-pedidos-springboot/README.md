@@ -106,6 +106,16 @@ Resultado: 11 pruebas, 0 fallos.
 
 ## Reproducir los escenarios
 
+Con los tres servicios en ejecución, la carpeta `../scripts/demo-pa2/` tiene un script de PowerShell por escenario. Cada uno muestra la petición, la respuesta HTTP y el stock consultado directamente en SQL Server:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ..\scripts\demo-pa2\escenario1-anulacion-correcta.ps1
+```
+
+El orden es 1 → 2 → 3 → 5 → 4 (el 4 detiene WildFly). Para el reto se reinicia Spring Boot con la simulación activada y se ejecuta `reto-compensacion.ps1`.
+
+Manualmente:
+
 1. Ejecutar `../inventario-service/database/02_reset_stock_demo.sql` (LAP-001 = 10).
 2. Registrar un pedido de 2 unidades de LAP-001 (stock → 8).
 3. Ejecutar las peticiones de `requests/anulaciones.http` en orden: anulación correcta (stock → 10), duplicada (409), inexistente (404).
