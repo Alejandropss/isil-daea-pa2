@@ -22,10 +22,7 @@ import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-/**
- * PA2 - Reto: compensación de una reserva cuando la parte local falla.
- * El fallo se provoca con la bandera del constructor (true), no con un endpoint.
- */
+/** Reto: pruebas de la compensación (el fallo se activa con true en el constructor). */
 class PedidoServiceImplCompensacionTest {
 
   private PedidoRepository pedidoRepository;

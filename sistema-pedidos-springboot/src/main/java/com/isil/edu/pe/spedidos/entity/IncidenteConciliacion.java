@@ -8,11 +8,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
 
-/**
- * Reto PA2: deja constancia de una compensación que NO se pudo aplicar.
- * Un operador debe revisar Inventario y corregir el stock manualmente
- * (estado PENDIENTE_CONCILIACION).
- */
+/** Reto: se guarda cuando la compensación falla, para revisar el stock después. */
 @Entity
 @Table(name = "incidente_conciliacion")
 public class IncidenteConciliacion {

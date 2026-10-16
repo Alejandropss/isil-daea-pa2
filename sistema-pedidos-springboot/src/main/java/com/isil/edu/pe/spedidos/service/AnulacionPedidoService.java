@@ -8,10 +8,7 @@ import java.util.List;
  */
 public interface AnulacionPedidoService {
 
-  /**
-   * Devuelve el stock del pedido a Inventario, registra la anulación en H2
-   * y cambia el estado del pedido a ANULADO.
-   */
+  /** Devuelve el stock, guarda la anulación y cambia el pedido a ANULADO. */
   AnulacionPedido anularPedido(Long pedidoId, String motivo);
 
   List<AnulacionPedido> listarAnulaciones();

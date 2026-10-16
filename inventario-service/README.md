@@ -91,74 +91,51 @@ También existen endpoints por `codigo` (`LAP-001`, `MON-001`, `TEC-001`) para m
 
 ---
 
-## PA2 — Devolución de stock por código
+## PA2 - Devolución de stock
 
-### Nuevo endpoint
+Nuevo endpoint:
 
 ```text
 POST /inventario-service/api/inventario/productos/codigo/{codigo}/devoluciones
-Content-Type: application/json
 ```
 
-Flujo: `ProductoResource` → `InventarioService` (`@Stateless`, `@TransactionAttribute(REQUIRED)`) → `ProductoInventario.devolverStock()` → SQL Server. La versión (`@Version`) se conserva, así que dos actualizaciones simultáneas del mismo producto generan `409 Conflict` en lugar de perder una de ellas.
-
-| Caso | Respuesta |
-|---|---|
-| Devolución válida | `200 OK` con `codigo`, `cantidadDevuelta`, `stockRestante` |
-| `cantidad` ≤ 0 o cuerpo vacío | `400 Bad Request` (el stock no cambia) |
-| Código inexistente | `404 Not Found` |
-| Conflicto de versión | `409 Conflict` |
-
-Ejemplo ejecutable (PowerShell, con WildFly corriendo en 8082):
-
-```powershell
-curl.exe -s -X POST http://localhost:8082/inventario-service/api/inventario/productos/codigo/LAP-001/devoluciones -H "Content-Type: application/json" -d '{\"cantidad\":2}'
-```
-
-Respuesta (stock inicial 8):
+Body:
 
 ```json
-{
-  "productoId": 1,
-  "codigo": "LAP-001",
-  "nombre": "Laptop",
-  "cantidadDevuelta": 2,
-  "stockRestante": 10,
-  "version": 3
-}
+{ "cantidad": 2 }
 ```
 
-Más ejemplos (válido, cantidad 0 y código inexistente) en `requests/inventario-service.http`. El contrato está documentado en `openapi/inventario-service.yaml` (versión 1.4.0).
+Respuesta `200` (si el stock era 8):
 
-### Requisitos
+```json
+{ "codigo": "LAP-001", "cantidadDevuelta": 2, "stockRestante": 10 }
+```
 
-- JDK 21 y Maven 3.9+.
-- SQL Server con **TCP/IP habilitado en el puerto 1433** y autenticación mixta.
-- Base `InventarioDB` creada con `database/01_crear_inventario.sql` (y `03_agregar_precio_catalogo.sql` si la base es anterior).
+- Cantidad 0 o negativa → `400` y el stock no cambia.
+- Código que no existe → `404`.
 
-### Configuración (sin secretos)
+Flujo: `ProductoResource` → `InventarioService` (`@Stateless`, transacción `REQUIRED`) → `ProductoInventario.devolverStock()` → SQL Server. Se mantiene `@Version`.
 
-La conexión se define en `config/database.properties` (URL `jdbc:sqlserver://localhost:1433;databaseName=InventarioDB`, usuario de laboratorio `inventario_app` y JNDI `java:jboss/datasources/InventarioDS`). La contraseña es solo de laboratorio; en un entorno real debe ir en un Credential Store de WildFly o en variables de entorno, nunca en el repositorio.
+Ejemplos en `requests/inventario-service.http` y contrato en `openapi/inventario-service.yaml`.
 
-### Orden de arranque
+### Cómo ejecutar
 
-1. **SQL Server** (servicio `MSSQLSERVER` en ejecución).
-2. **WildFly**: en esta carpeta, `mvn clean wildfly:run` → `http://localhost:8082/inventario-service/`.
-3. **Spring Boot** (`sistema-pedidos-springboot`), que consume esta API.
+1. SQL Server encendido (con TCP/IP en el puerto 1433).
+2. `mvn clean wildfly:run` en esta carpeta.
+3. Después arrancar `sistema-pedidos-springboot`.
+
+La conexión está en `config/database.properties` (usuario de laboratorio; en un entorno real la contraseña no debería ir en el repositorio).
 
 ### Pruebas
 
 ```bash
-mvn clean test
+mvn test
 ```
 
-`ProductoInventarioDevolucionTest` verifica la devolución válida (8 + 2 = 10) y que una cantidad 0 o negativa se rechace sin cambiar el stock. Resultado: 5 pruebas, 0 fallos.
+`ProductoInventarioDevolucionTest`: devolución válida (8 + 2 = 10) y devolución inválida (0 y -3, el stock no cambia). Total: 5 pruebas, 0 fallos.
 
-### Reproducir el estado inicial
-
-`database/02_reset_stock_demo.sql` vuelve los stocks a 10 / 20 / 30.
+Para volver el stock a 10 / 20 / 30: `database/02_reset_stock_demo.sql`.
 
 ### Limitaciones
 
-- La devolución no es idempotente: si el cliente repite el POST se suma el stock otra vez. Por eso Spring Boot no reintenta automáticamente y controla los duplicados con la tabla `anulacion_pedido`.
-- No valida que la cantidad devuelta corresponda a una reserva previa; esa regla la aplica el sistema de pedidos.
+- Si se repite el mismo POST, el stock se suma otra vez. Por eso Spring no reintenta.

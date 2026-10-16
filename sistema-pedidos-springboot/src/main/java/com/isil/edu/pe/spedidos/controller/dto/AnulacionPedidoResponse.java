@@ -4,9 +4,7 @@ import com.isil.edu.pe.spedidos.entity.AnulacionPedido;
 import com.isil.edu.pe.spedidos.entity.PedidoEstado;
 import java.time.LocalDateTime;
 
-/**
- * DTO de salida: la entidad JPA nunca se expone directamente como contrato JSON.
- */
+/** Respuesta JSON de una anulación (no se devuelve la entidad directamente). */
 public record AnulacionPedidoResponse(
     Long id,
     Long pedidoId,

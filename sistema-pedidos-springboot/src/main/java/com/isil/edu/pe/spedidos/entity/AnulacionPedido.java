@@ -9,13 +9,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDateTime;
 
-/**
- * Registro de auditoría de una anulación (PA2).
- *
- * <p>La restricción UNIQUE sobre pedido_id es la última barrera contra duplicados:
- * aunque el Service ya los rechaza, la base de datos tampoco permitiría dos
- * anulaciones del mismo pedido.</p>
- */
+/** Registro de una anulación. pedido_id es UNIQUE para que no haya duplicados. */
 @Entity
 @Table(
     name = "anulacion_pedido",

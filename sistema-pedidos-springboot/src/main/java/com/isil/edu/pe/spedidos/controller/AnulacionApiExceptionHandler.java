@@ -14,11 +14,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * Convierte las excepciones de la API de anulaciones en respuestas JSON con un
- * código HTTP coherente. Solo aplica a AnulacionPedidoController, para no
- * alterar el comportamiento de las vistas JSP existentes.
- */
+/** Convierte los errores de la API de anulaciones en JSON con su código HTTP. */
 @RestControllerAdvice(assignableTypes = AnulacionPedidoController.class)
 public class AnulacionApiExceptionHandler {
 
@@ -32,7 +28,7 @@ public class AnulacionApiExceptionHandler {
     return responder(HttpStatus.CONFLICT, e.getMessage(), req);
   }
 
-  /** Red de seguridad: la restricción UNIQUE de pedido_id rechazó una segunda anulación. */
+  /** Por si acaso: el UNIQUE de pedido_id no deja guardar dos anulaciones. */
   @ExceptionHandler(DataIntegrityViolationException.class)
   public ResponseEntity<ApiErrorResponse> violacionUnique(DataIntegrityViolationException e, HttpServletRequest req) {
     return responder(HttpStatus.CONFLICT, "Ya existe una anulación registrada para este pedido.", req);

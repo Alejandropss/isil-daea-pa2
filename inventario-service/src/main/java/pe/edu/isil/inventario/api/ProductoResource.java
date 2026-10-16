@@ -87,10 +87,7 @@ public class ProductoResource {
     return Response.ok(toReservaResponse(producto, request.getCantidad())).build();
   }
 
-  /**
-   * PA2: devuelve stock de un producto. Cantidad inválida -> 400 (Bean Validation);
-   * código inexistente -> 404 (InventarioExceptionMapper).
-   */
+  /** PA2: devolución de stock. Cantidad inválida -> 400, código inexistente -> 404. */
   @POST
   @Path("/codigo/{codigo}/devoluciones")
   public Response devolverPorCodigo(

@@ -21,14 +21,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-/**
- * PA2 - Reto, escenario completo con Spring y H2 reales (Inventario simulado):
- * stock 10 -> reserva 2 (queda 8) -> fallo local antes del commit
- * -> compensación (vuelve a 10) y el pedido NO queda en H2.
- *
- * <p>La simulación se activa solo en esta prueba mediante la propiedad;
- * en application.properties sigue en false.</p>
- */
+/** Reto: stock 10 -> 8 (reserva) -> falla H2 -> 10 (compensación) y el pedido no se guarda. */
 @SpringBootTest(properties = "pedidos.simulacion.fallo-local-tras-reserva=true")
 class ReservaCompensadaIntegrationTest {
 

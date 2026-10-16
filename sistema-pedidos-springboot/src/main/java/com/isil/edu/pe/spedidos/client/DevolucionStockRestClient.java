@@ -11,15 +11,8 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
 /**
- * Implementación HTTP/JSON de {@link DevolucionStockClient}.
- *
- * <p>Reutiliza la infraestructura que ya existe en el proyecto: el bean
- * {@code inventarioHttpClient} (con los timeouts configurados) y la URL base
- * {@code inventario.api.base-url} de application.properties. Ambos llegan por
- * Constructor Injection; esta clase nunca crea su RestClient con {@code new}.</p>
- *
- * <p>No reintenta el POST automáticamente: una devolución no es idempotente y
- * repetirla podría devolver el stock dos veces.</p>
+ * Llama a la API de devolución de Inventario con el RestClient del proyecto.
+ * No reintenta el POST: si se repite, el stock se sumaría dos veces.
  */
 @Component
 public class DevolucionStockRestClient implements DevolucionStockClient {
@@ -63,7 +56,7 @@ public class DevolucionStockRestClient implements DevolucionStockClient {
         mensaje = error.getMessage();
       }
     } catch (RuntimeException ignored) {
-      // El cuerpo no tenía el formato ApiError: se conserva el mensaje genérico.
+      // Si no se puede leer el error, queda el mensaje genérico.
     }
     return new InventarioClientException(e.getStatusCode().value(), mensaje);
   }

@@ -26,11 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-/**
- * PA2 - Parte C: pruebas unitarias de AnulacionPedidoServiceImpl con Mockito.
- * Gracias a Constructor Injection el servicio se crea con "new" y mocks:
- * no se levanta Spring, ni H2, ni inventario-service.
- */
+/** Pruebas de AnulacionPedidoServiceImpl con mocks (sin levantar Spring). */
 class AnulacionPedidoServiceImplTest {
 
   private PedidoRepository pedidoRepository;

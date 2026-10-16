@@ -13,10 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * API REST de anulaciones. Solo traduce HTTP/JSON y delega en el Service,
- * que recibe por Constructor Injection.
- */
+/** API REST de anulaciones. El Service llega por el constructor. */
 @RestController
 @RequestMapping("/api/v1/anulaciones")
 public class AnulacionPedidoController {

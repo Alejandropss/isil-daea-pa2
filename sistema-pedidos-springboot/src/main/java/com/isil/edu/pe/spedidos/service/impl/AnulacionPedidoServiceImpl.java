@@ -19,13 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Anula pedidos coordinando Inventario (remoto) y H2 (local).
- *
- * <p>Las tres dependencias llegan por Constructor Injection: Spring crea este
- * bean pasándole los repositorios y el cliente HTTP. En las pruebas unitarias se
- * construye con mocks, sin levantar Spring ni inventario-service.</p>
- */
+/** Anula pedidos: devuelve el stock a Inventario y guarda la anulación en H2. */
 @Service
 public class AnulacionPedidoServiceImpl implements AnulacionPedidoService {
 
@@ -45,13 +39,8 @@ public class AnulacionPedidoServiceImpl implements AnulacionPedidoService {
     this.devolucionStockClient = devolucionStockClient;
   }
 
-  /**
-   * Orden deliberado: 1) validaciones locales, 2) devolución remota, 3) escritura en H2.
-   *
-   * <p>@Transactional solo controla H2. Si Inventario falla en el paso 2, la excepción
-   * sale antes del paso 3 y no queda ninguna anulación local. La devolución remota y
-   * la escritura local NO forman una transacción distribuida atómica.</p>
-   */
+  // Orden: 1) validar, 2) devolver stock en Inventario, 3) guardar en H2.
+  // Si Inventario falla en el paso 2, no se guarda nada en H2.
   @Override
   @Transactional
   public AnulacionPedido anularPedido(Long pedidoId, String motivo) {
@@ -63,7 +52,7 @@ public class AnulacionPedidoServiceImpl implements AnulacionPedidoService {
     Pedido pedido = pedidoRepository.findById(pedidoId)
         .orElseThrow(() -> new PedidoNoEncontradoException(pedidoId));
 
-    // Duplicados: se rechazan ANTES de llamar a Inventario, así no se devuelve stock dos veces.
+    // Si ya estaba anulado, se rechaza antes de llamar a Inventario.
     if (pedido.getEstado() != PedidoEstado.REGISTRADO || anulacionPedidoRepository.existsByPedidoId(pedidoId)) {
       throw new AnulacionNoPermitidaException(
           "El pedido " + pedidoId + " ya fue anulado (estado " + pedido.getEstado()
@@ -92,7 +81,7 @@ public class AnulacionPedidoServiceImpl implements AnulacionPedidoService {
     try {
       return devolucionStockClient.devolverStock(pedido.getProductoCodigo(), pedido.getCantidad());
     } catch (InventarioClientException e) {
-      // Un 5xx es una falla técnica del servicio remoto, no un error de los datos enviados.
+      // 5xx = falla del servidor de Inventario.
       if (e.getStatus() >= 500) {
         throw new InventarioNoDisponibleException(
             "El servicio de inventario presentó un error temporal (HTTP " + e.getStatus() + ").", e);

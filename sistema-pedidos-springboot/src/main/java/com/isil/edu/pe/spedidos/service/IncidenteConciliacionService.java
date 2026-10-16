@@ -6,14 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * Registra incidentes de conciliación en una transacción PROPIA.
- *
- * <p>REQUIRES_NEW suspende la transacción del pedido (que va a hacer rollback)
- * y abre otra: así el incidente queda guardado aunque el pedido se revierta.
- * Está en un bean separado porque Spring solo aplica @Transactional cuando la
- * llamada pasa por el proxy, no en llamadas internas de la misma clase.</p>
- */
+/** Guarda el incidente en su propia transacción (REQUIRES_NEW) para que no se pierda con el rollback. */
 @Service
 public class IncidenteConciliacionService {
 

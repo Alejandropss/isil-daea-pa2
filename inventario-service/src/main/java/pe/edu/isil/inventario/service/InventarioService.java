@@ -86,13 +86,7 @@ public class InventarioService {
     return reservar(obtenerProductoPorCodigo(codigo), cantidad);
   }
 
-  /**
-   * Devuelve stock en una transacción local de Inventario (PA2).
-   *
-   * <p>Si el código no existe o la cantidad es inválida, la InventarioException
-   * provoca rollback y el stock no cambia. El @Version de la entidad se conserva:
-   * si otra operación modificó el producto, se informa un conflicto (409).</p>
-   */
+  /** PA2: devuelve stock. Si algo falla se hace rollback y el stock no cambia. */
   @TransactionAttribute(TransactionAttributeType.REQUIRED)
   public ProductoInventario devolverStockPorCodigo(String codigo, int cantidad) {
     if (cantidad <= 0) {

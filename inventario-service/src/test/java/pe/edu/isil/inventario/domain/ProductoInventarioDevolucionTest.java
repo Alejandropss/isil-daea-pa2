@@ -9,10 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-/**
- * Pruebas PA2 de la operación de dominio ProductoInventario.devolverStock(...).
- * No necesitan WildFly ni SQL Server: prueban la entidad en memoria.
- */
+/** Pruebas de devolverStock() sin WildFly ni SQL Server. */
 class ProductoInventarioDevolucionTest {
 
   @Test
